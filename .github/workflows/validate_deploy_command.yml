@@ -18,7 +18,7 @@ on:
         type: string
         default: 'cicd-package.xml'
     secrets:
-      TOKEN:
+      SFDX_AUTH_URL:
         required: true
 
 env:
@@ -33,20 +33,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install
         run: npm install @salesforce/cli -g
-      - name: Create Setting Folder
-        run: mkdir -p ~/.sfdx
-      - name: Import Credentials
+      - name: Authenticate (sfdx auth url)
         run: |
-          echo ${{ secrets[format('sfdx_alias_{0}', inputs.alias)] }} | base64 --decode > ~/.sfdx/alias.json
-          echo ${{ secrets[format('sfdx_key_{0}', inputs.alias)] }} | base64 --decode > ~/.sfdx/key.json
-          echo ${{ secrets[format('sfdx_token_{0}', inputs.alias)] }} | base64 --decode > ~/.sfdx/${{ vars[format('USERNAME_{0}', inputs.alias)] }}.json
-          echo -n ${{ secrets[format('jwt_key_{0}', inputs.alias)] }} | base64 --decode > server.key
+          echo "$SFDX_AUTH_URL" > ./authurl.txt
+          sf org login sfdx-url --sfdx-url-file ./authurl.txt --alias ${{ inputs.alias }} --set-default
+          rm -f ./authurl.txt
         env:
-          GH_TOKEN: ${{ secrets.TOKEN }}
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
       - name: Validate/Deploy
         run: |
-          chmod 600 ~/.sfdx/key.json
-          sf project deploy start --manifest manifest/${{ inputs.manifest }} $TEST_OPTION --target-org ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --wait 60 $DRY_RUN_OPTION > validateResult.txt
+          sf project deploy start --manifest manifest/${{ inputs.manifest }} $TEST_OPTION --target-org ${{ inputs.alias }} --wait 60 $DRY_RUN_OPTION > validateResult.txt
         env:
           DRY_RUN_OPTION: ${{ inputs.dryRun == true && '--dry-run' || '' }}
           TEST_OPTION: ${{ inputs.testLevel == 'RunSpecifiedTests' && format('--test-level {0} --tests {1}', inputs.testLevel, inputs.testClasses) || format('--test-level {0}', inputs.testLevel) }}

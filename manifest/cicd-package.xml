@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CI/CD デプロイ検証用の最小マニフェスト。
+  GitHub Actions から agentDst 組織へのデプロイ経路が通ることを確認する目的。
+  本番のデプロイ対象を増やす場合はこのファイルに members を追記する。
+-->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>CicdSmokeTest</members>
+        <members>CicdSmokeTestTest</members>
+        <name>ApexClass</name>
+    </types>
+    <version>66.0</version>
+</Package>

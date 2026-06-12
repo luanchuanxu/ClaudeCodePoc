@@ -7,11 +7,11 @@ on:
         required: true
         type: choice
         options:
-          - frontval
-          - frontvalsi
+          - tst
+          - stg
       manifest:
         type: string
-        default: 'package.xml'
+        default: 'cicd-package.xml'
       skipTest:
         default: false
         type: boolean

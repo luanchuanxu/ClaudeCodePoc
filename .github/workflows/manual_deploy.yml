@@ -11,7 +11,7 @@ on:
           - stg
       manifest:
         type: string
-        default: 'package.xml'
+        default: 'cicd-package.xml'
       skipTest:
         default: false
         type: boolean

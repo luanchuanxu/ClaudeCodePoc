@@ -16,6 +16,7 @@ on:
         type: boolean
       manifest:
         type: string
+        default: 'cicd-package.xml'
     secrets:
       TOKEN:
         required: true
@@ -31,11 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install
-        run: npm install @salesforce/cli yarn -g
-      - name: Convert Environment Variables
-        run: |
-          yarn install
-          yarn gulp:convert --envType ${{ inputs.alias }}
+        run: npm install @salesforce/cli -g
       - name: Create Setting Folder
         run: mkdir -p ~/.sfdx
       - name: Import Credentials
@@ -49,9 +46,7 @@ jobs:
       - name: Validate/Deploy
         run: |
           chmod 600 ~/.sfdx/key.json
-          sf apex run --target-org  ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --file ./scripts/apex/inactivate_front_bots.apex
           sf project deploy start --manifest manifest/${{ inputs.manifest }} $TEST_OPTION --target-org ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --wait 60 $DRY_RUN_OPTION > validateResult.txt
-          sf apex run --target-org  ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --file ./scripts/apex/activate_front_bots.apex
         env:
           DRY_RUN_OPTION: ${{ inputs.dryRun == true && '--dry-run' || '' }}
           TEST_OPTION: ${{ inputs.testLevel == 'RunSpecifiedTests' && format('--test-level {0} --tests {1}', inputs.testLevel, inputs.testClasses) || format('--test-level {0}', inputs.testLevel) }}

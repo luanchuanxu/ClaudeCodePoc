@@ -1,0 +1,16 @@
+name: on Merge Deploy
+
+on:
+  push:
+    branches:
+      - "develop"
+  # pull_request:
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate_deploy_command.yml
+    with:
+      alias: tst
+      testLevel: RunLocalTests
+      dryRun: false
+    secrets: inherit

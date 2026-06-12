@@ -1,0 +1,60 @@
+name: Sub-workflow to validate/deploy
+
+on:
+  workflow_call:
+    inputs:
+      alias:
+        required: true
+        type: string
+      testLevel: ## Expected NoTestRun | RunSpecifiedTests | RunLocalTests
+        required: true
+        type: string
+      testClasses:
+        type: string
+      dryRun: # Validate のみで Deploy しない場合は true
+        default: true
+        type: boolean
+      manifest:
+        type: string
+    secrets:
+      TOKEN:
+        required: true
+
+env:
+  SF_USE_GENERIC_UNIX_KEYCHAIN: true
+  SF_USE_PROGRESS_BAR: false
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: npm install @salesforce/cli yarn -g
+      - name: Convert Environment Variables
+        run: |
+          yarn install
+          yarn gulp:convert --envType ${{ inputs.alias }}
+      - name: Create Setting Folder
+        run: mkdir -p ~/.sfdx
+      - name: Import Credentials
+        run: |
+          echo ${{ secrets[format('sfdx_alias_{0}', inputs.alias)] }} | base64 --decode > ~/.sfdx/alias.json
+          echo ${{ secrets[format('sfdx_key_{0}', inputs.alias)] }} | base64 --decode > ~/.sfdx/key.json
+          echo ${{ secrets[format('sfdx_token_{0}', inputs.alias)] }} | base64 --decode > ~/.sfdx/${{ vars[format('USERNAME_{0}', inputs.alias)] }}.json
+          echo -n ${{ secrets[format('jwt_key_{0}', inputs.alias)] }} | base64 --decode > server.key
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN }}
+      - name: Validate/Deploy
+        run: |
+          chmod 600 ~/.sfdx/key.json
+          sf apex run --target-org  ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --file ./scripts/apex/inactivate_front_bots.apex
+          sf project deploy start --manifest manifest/${{ inputs.manifest }} $TEST_OPTION --target-org ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --wait 60 $DRY_RUN_OPTION > validateResult.txt
+          sf apex run --target-org  ${{ vars[format('USERNAME_{0}', inputs.alias)] }} --file ./scripts/apex/activate_front_bots.apex
+        env:
+          DRY_RUN_OPTION: ${{ inputs.dryRun == true && '--dry-run' || '' }}
+          TEST_OPTION: ${{ inputs.testLevel == 'RunSpecifiedTests' && format('--test-level {0} --tests {1}', inputs.testLevel, inputs.testClasses) || format('--test-level {0}', inputs.testLevel) }}
+      - name: Show Validate/Deploy Result
+        run: cat validateResult.txt
+        if: success() || failure()

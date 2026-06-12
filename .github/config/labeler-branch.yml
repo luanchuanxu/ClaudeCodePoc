@@ -1,0 +1,6 @@
+tkt:
+  - head-branch: ['^feature/tkt']
+cpt:
+  - head-branch: ['^feature/cpt']
+opp:
+  - head-branch: ['^feature/opp']

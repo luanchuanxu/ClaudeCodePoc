@@ -1,0 +1,34 @@
+name: Authenticate to org
+
+on:
+  workflow_dispatch:
+    inputs:
+      alias:
+        required: true
+        type: string
+
+env:
+  SF_USE_GENERIC_UNIX_KEYCHAIN: true
+
+jobs:
+  auth:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Salesforce CLI
+        run: npm install @salesforce/cli -g
+      - name: Save Private Key
+        run: echo -n ${{ secrets[format('jwt_key_{0}', inputs.alias)] }} | base64 -d > server.key
+      - name: Start OAuth 2.0 JWT Flow
+        run: sf org login jwt --client-id ${{ vars[format('CLIENT_ID_{0}', github.event.inputs.alias)] }} --instance-url ${{ vars[format('INSTANCE_URL_{0}', github.event.inputs.alias)] }} --alias ${{ github.event.inputs.alias }} --jwtkeyfile server.key --username ${{ vars[format('USERNAME_{0}', github.event.inputs.alias)] }}
+      - name: Save Credentials
+        run: |
+          base64 -w 0 ~/.sfdx/alias.json > ~/.sfdx/alias.base64
+          base64 -w 0 ~/.sfdx/key.json > ~/.sfdx/key.base64
+          base64 -w 0 ~/.sfdx/${{ vars[format('USERNAME_{0}', github.event.inputs.alias)] }}.json > ~/.sfdx/${{ vars[format('USERNAME_{0}', github.event.inputs.alias)] }}.base64
+          gh secret set sfdx_alias_${{ github.event.inputs.alias }} < ~/.sfdx/alias.base64
+          gh secret set sfdx_key_${{ github.event.inputs.alias }} < ~/.sfdx/key.base64
+          gh secret set sfdx_token_${{ github.event.inputs.alias }} < ~/.sfdx/${{ vars[format('USERNAME_{0}', github.event.inputs.alias)] }}.base64
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN }}

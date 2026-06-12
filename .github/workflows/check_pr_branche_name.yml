@@ -1,0 +1,52 @@
+name: Validate PR Branch Name
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  validate-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch naming rules
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          echo "Head branch: $HEAD_REF"
+          echo "Base branch: $BASE_REF"
+
+          # 条件
+          if [[ "$HEAD_REF" != feature/tkt/* && "$BASE_REF" == develop/tkt/* ]]; then
+            echo "❌ チケット管理チームのfeatureブランチは develop/tkt/* に向ける必要があります"
+            gh api \
+              repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER \
+              -X PATCH \
+              -f state=closed \
+              -f body='自動クローズ: チケット管理チームのfeatureブランチは develop/tkt/* に向ける必要があります。' > result.json
+            exit 1
+          fi
+
+          if [[ "$HEAD_REF" != feature/opp/* && "$BASE_REF" == develop/opp/* ]]; then
+            echo "❌ 商談管理チームのfeatureブランチは develop/opp/* に向ける必要があります"
+            gh api \
+              repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER \
+              -X PATCH \
+              -f state=closed \
+              -f body='自動クローズ: 商談管理チームのfeatureブランチは develop/opp/* に向ける必要があります。' > result.json
+            exit 1
+          fi
+
+          if [[ "$HEAD_REF" != feature/cpt/* && "$BASE_REF" == develop/cpt/* ]]; then
+            echo "❌ 顧客ポータルチームのfeatureブランチは develop/cpt/* に向ける必要があります"
+            gh api \
+              repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER \
+              -X PATCH \
+              -f state=closed \
+              -f body='自動クローズ: 顧客ポータルチームのfeatureブランチは develop/cpt/* に向ける必要があります。' > result.json
+            exit 1
+          fi
+
+          echo "✅ Branch naming convention validation passed"

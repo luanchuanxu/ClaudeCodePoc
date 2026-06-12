@@ -1,0 +1,6 @@
+tools:
+  - changed-files:
+    - any-glob-to-any-file: ['scripts/*', 'package.json', 'package-lock.json']
+devops:
+  - changed-files:
+    - any-glob-to-any-file: ['.github/*']

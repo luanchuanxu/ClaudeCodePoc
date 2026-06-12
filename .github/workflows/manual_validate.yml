@@ -1,0 +1,28 @@
+name: Manual Validate
+
+on:
+  workflow_dispatch:
+    inputs:
+      alias:
+        required: true
+        type: choice
+        options:
+          - frontval
+          - frontvalsi
+      manifest:
+        type: string
+        default: 'package.xml'
+      skipTest:
+        default: false
+        type: boolean
+        description: "テスト実行をスキップ"
+
+jobs:
+  validate_with_test:
+    uses: ./.github/workflows/validate_deploy_command.yml
+    with:
+      alias: ${{ inputs.alias }}
+      testLevel: ${{ inputs.skipTest == true && 'NoTestRun' || 'RunLocalTests' }}
+      dryRun: true
+      manifest: ${{ inputs.manifest }}
+    secrets: inherit

@@ -1,0 +1,26 @@
+name: Create Git Tag (and Deploy to stg)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        required: true
+        type: string
+
+jobs:
+  create-git-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git tag ${{ inputs.tag_name }}
+          git push origin ${{ inputs.tag_name }}
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN }}
+  deploy:
+    uses: ./.github/workflows/validate_deploy_command.yml
+    with:
+      alias: stg
+      testLevel: RunLocalTests
+      dryRun: false
+    secrets: inherit

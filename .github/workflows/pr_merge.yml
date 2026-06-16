@@ -13,4 +13,5 @@ jobs:
       alias: tst
       testLevel: RunLocalTests
       dryRun: false
-    secrets: inherit
+    secrets:
+      JWT_KEY: ${{ secrets.JWT_KEY }}

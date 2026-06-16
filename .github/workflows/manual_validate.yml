@@ -25,4 +25,5 @@ jobs:
       testLevel: ${{ inputs.skipTest == true && 'NoTestRun' || 'RunLocalTests' }}
       dryRun: true
       manifest: ${{ inputs.manifest }}
-    secrets: inherit
+    secrets:
+      JWT_KEY: ${{ secrets.JWT_KEY }}

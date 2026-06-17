@@ -1,0 +1,144 @@
+<template>
+  <lightning-card>
+    <div slot="title">
+      <span class="slds-text-heading_medium">{headerTitle}</span>
+    </div>
+    <div slot="actions">
+      <lightning-combobox
+        label="ユーザ"
+        variant="label-hidden"
+        value={selectedUserId}
+        options={userOptions}
+        onchange={handleUserChange}
+      ></lightning-combobox>
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        alternative-text="更新"
+        title="更新"
+        onclick={handleRefresh}
+      ></lightning-button-icon>
+    </div>
+
+    <div class="slds-p-around_medium">
+      <!-- ローディング -->
+      <template if:true={isLoading}>
+        <lightning-spinner alternative-text="読み込み中" size="medium"></lightning-spinner>
+      </template>
+
+      <!-- エラー -->
+      <template if:true={hasError}>
+        <div class="slds-notify slds-notify_alert slds-theme_error" role="alert">
+          <span class="slds-assistive-text">エラー</span>
+          {errorMessage}
+        </div>
+      </template>
+
+      <template if:false={isLoading}>
+        <!-- アクションバー -->
+        <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_small">
+          <div class="slds-col slds-size_1-of-1">
+            <lightning-checkbox-group
+              name="forecastTypes"
+              label="売上予測種別"
+              options={forecastTypeOptions}
+              value={selectedForecastTypes}
+              onchange={handleForecastTypeChange}
+            ></lightning-checkbox-group>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+            <lightning-input
+              type="toggle"
+              label="目標列を表示"
+              checked={showTarget}
+              onchange={handleToggleTarget}
+            ></lightning-input>
+            <lightning-input
+              type="toggle"
+              label="目標達成率を表示"
+              checked={showAchievementRate}
+              onchange={handleToggleAchievementRate}
+              class="slds-m-left_medium"
+            ></lightning-input>
+            <lightning-input
+              type="toggle"
+              label="すべての値が0の行を表示"
+              checked={showZeroRows}
+              onchange={handleToggleZeroRows}
+              class="slds-m-left_medium"
+            ></lightning-input>
+          </div>
+        </div>
+
+        <!-- サマリテーブル -->
+        <div class="slds-m-bottom_medium">
+          <h2 class="slds-text-heading_small slds-m-bottom_x-small">
+            {headerTitle}
+            <span class="slds-text-body_small slds-m-left_small">最終更新：{formattedLastUpdated}</span>
+          </h2>
+          <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+            <thead>
+              <tr class="slds-line-height_reset">
+                <th onclick={handleSort} data-field="month" scope="col">
+                  <div class="slds-truncate">月 {monthSortIndicator}</div>
+                </th>
+                <template if:true={showTarget}>
+                  <th onclick={handleSort} data-field="targetAmount" scope="col">
+                    <div class="slds-truncate slds-text-align_right">目標 {targetSortIndicator}</div>
+                  </th>
+                </template>
+                <th onclick={handleSort} data-field="closedAmount" scope="col">
+                  <div class="slds-truncate slds-text-align_right">Closed {closedSortIndicator}</div>
+                </th>
+                <th onclick={handleSort} data-field="commitAmount" scope="col">
+                  <div class="slds-truncate slds-text-align_right">Commit {commitSortIndicator}</div>
+                </th>
+                <th onclick={handleSort} data-field="bestCaseAmount" scope="col">
+                  <div class="slds-truncate slds-text-align_right">Best Case {bestCaseSortIndicator}</div>
+                </th>
+                <th onclick={handleSort} data-field="pipelineAmount" scope="col">
+                  <div class="slds-truncate slds-text-align_right">Pipeline {pipelineSortIndicator}</div>
+                </th>
+                <template if:true={showAchievementRate}>
+                  <th onclick={handleSort} data-field="achievementRate" scope="col">
+                    <div class="slds-truncate slds-text-align_right">達成率 {achievementRateSortIndicator}</div>
+                  </th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={filteredSummaryList} for:item="row">
+                <tr key={row.month}>
+                  <td data-label="月">{row.month}</td>
+                  <template if:true={showTarget}>
+                    <td class="slds-text-align_right" data-label="目標">{row.formattedTarget}</td>
+                  </template>
+                  <td class="slds-text-align_right" data-label="Closed">{row.formattedClosed}</td>
+                  <td class="slds-text-align_right" data-label="Commit">{row.formattedCommit}</td>
+                  <td class="slds-text-align_right" data-label="Best Case">{row.formattedBestCase}</td>
+                  <td class="slds-text-align_right" data-label="Pipeline">{row.formattedPipeline}</td>
+                  <template if:true={showAchievementRate}>
+                    <td class="slds-text-align_right" data-label="達成率">{row.formattedAchievementRate}</td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 明細テーブル -->
+        <div>
+          <h2 class="slds-text-heading_small slds-m-bottom_x-small">商談明細</h2>
+          <lightning-datatable
+            key-field="id"
+            data={sortedDetailList}
+            columns={detailColumns}
+            sorted-by={sortedBy}
+            sorted-direction={sortedDirection}
+            onsort={handleDetailSort}
+            hide-checkbox-column
+          ></lightning-datatable>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>
